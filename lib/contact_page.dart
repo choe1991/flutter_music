@@ -1,4 +1,5 @@
-//import 'package:adhara_socket_io/adhara_socket_io.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/status.dart' as status;
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -15,8 +16,8 @@ class PageState extends State<ContactPage> {
   List songs;
   int PlayStatu = 0;
   int playedId = 0;
-//  SocketIOManager manager;
-//  SocketIO socket;
+  var channel = IOWebSocketChannel.connect("ws://86qweqweqwe.com");
+
   AudioPlayer audioPlayer = new AudioPlayer();
 
   Future getSongs({String keyword: "你好"}) async {
@@ -29,7 +30,7 @@ class PageState extends State<ContactPage> {
     });
   }
 
-  void doit(int id) async {
+  Future<int> playByMusic(int id) async {
     audioPlayer.stop();
     final String url = "http://music.86qweqweqwe.com/song/url?id=$id";
     Dio dio = new Dio();
@@ -41,12 +42,19 @@ class PageState extends State<ContactPage> {
       setState(() {
         PlayStatu = 0;
       });
-      return;
+      return 0;
     }
     int play_result = await audioPlayer.play(result);
     setState(() {
       playedId = id;
       PlayStatu = play_result;
+    });
+    return id;
+  }
+
+  void onButtonTap(id){
+    playByMusic(id).then((data)=>{
+      data!=0?channel.sink.add("请播放播放歌曲"+data.toString()):null
     });
   }
 
@@ -95,34 +103,21 @@ class PageState extends State<ContactPage> {
     getSongs(keyword: value);
   }
 
+
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     getSongs();
+    channel.stream.listen((message) {
+      print('received from socket server:'+message);
+    });
+    channel.sink.add("someone connected!");
 //    manager = SocketIOManager();
 //    socketIn();
   }
 
-//  void socketIn() async {
-//    print('initSockets');
-//    socket = await manager.createInstance("http://86qweqweqwe.com",enableLogging: true);
-//    socket.onConnect((data) {
-//      socket.emit("GroupJoin",null);
-//      print("connected...");
-//    });
-//    socket.on("top_events", (data) {
-//      print("top_events");
-//    });
-//    socket.onDisconnect((data) {
-//
-//      print('disconnected from socket.io');
-//    });
-//    socket.onReconnect((data) {
-//      print('reconnected to socket.io');
-//    });
-//    socket.connect();
-//  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +147,7 @@ class PageState extends State<ContactPage> {
                     itemCount: songs.length,
                     itemBuilder: (BuildContext context, int index) {
                       return new ListTile(
-                          onTap: () => {doit(songs[index].songid)},
+                          onTap: () => {onButtonTap(songs[index].songid)},
                           leading: new CircleAvatar(
                               child: new Text(songs[index].name[0])),
                           title: new Text(songs[index].name),
