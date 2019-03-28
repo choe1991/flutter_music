@@ -43,19 +43,30 @@ class PageState extends State<ContactPage> {
         PlayStatu = 0;
       });
       return 0;
+    }else{
+      int play_result = await audioPlayer.play(result);
+      setState(() {
+        playedId = id;
+        PlayStatu = play_result;
+      });
+      return id;
     }
-    int play_result = await audioPlayer.play(result);
-    setState(() {
-      playedId = id;
-      PlayStatu = play_result;
-    });
-    return id;
   }
 
-  void onButtonTap(id){
-    playByMusic(id).then((data)=>{
-      data!=0?channel.sink.add("请播放播放歌曲"+data.toString()):null
-    });
+  void sendMusicToServer(data){
+    print("sendMusicToServer"+data.toString());
+    if(data!=0){
+      print(123123);
+      channel.sink.add(data.toString());
+    }else{
+      print(321321321);
+    }
+
+  }
+
+  void onButtonTap(id) {
+    channel.sink.add("有人点击播放了"+id.toString());
+    playByMusic(id).then((data) =>sendMusicToServer(data));
   }
 
   void showError(String text) {
@@ -103,21 +114,25 @@ class PageState extends State<ContactPage> {
     getSongs(keyword: value);
   }
 
-
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     getSongs();
     channel.stream.listen((message) {
-      print('received from socket server:'+message);
+      try {
+        playByMusic(int.parse(message));
+        print('转数字成功:' + message);
+      } on FormatException {
+        print('received from socket server:' + message);
+      }
+
+
     });
     channel.sink.add("someone connected!");
 //    manager = SocketIOManager();
 //    socketIn();
   }
-
 
   @override
   Widget build(BuildContext context) {
