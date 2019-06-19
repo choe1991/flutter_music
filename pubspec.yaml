@@ -18,7 +18,7 @@ environment:
 
 dependencies:
   audioplayers: ^0.10.1
-  #adhara_socket_io: 0.1.10
+  web_socket_channel: 1.0.12
   dio:
   flutter:
     sdk: flutter
